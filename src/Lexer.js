@@ -2,7 +2,7 @@
     var Lexer;
     Pupil.lexer = Lexer = {};
 
-    var Token = Pupil.token;
+    var Token = Pupil.tokens;
 
     Lexer.tokenize = function(str) {
         str = str.replace(/([^\\])\s+/g, '$1');
@@ -21,7 +21,8 @@
         // If we're "building" an identifier, store it here until we flush it
         var tempIdentifier = "";
 
-        // When a char is escaped, treat it as an identifier
+        // When a char is escaped, treat it as an identifier even if it would
+        // otherwise be resolved to a different token
         var treatNextAsIdentifier = false;
 
         // Whether we should flush the identifier we're building
@@ -92,8 +93,8 @@
             // Flushing the identifier means pushing an identifier
             // token with the current "tempIdentifier" as the data
             // and then emptying the temporary identifier.
-            if (flushIdentifier) {
-                tokensToPush.push([Token.Identifier, tempIdentifier]);
+            if (flushIdentifier && tempIdentifier !== "") {
+                tokensToPush.unshift([Token.Identifier, tempIdentifier]);
                 tempIdentifier = "";
             }
 

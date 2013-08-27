@@ -1,8 +1,8 @@
 (function(Pupil, undefined) {
-	Pupil.token = {};
+	Pupil.tokens = {};
 
 	var addToken = function(name) {
-		Pupil.token[name] = {
+		Pupil.tokens[name] = {
 			name: name,
 			toString: function() {
 				return name;
