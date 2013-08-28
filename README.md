@@ -19,14 +19,14 @@ npm install pupil
 ```
 And then require it in your project:
 ```javascript
-var Pupil = require('pupil');
+var pupil = require('pupil');
 ```
 
 ## Usage
 The basic syntax is this:
 
 ```javascript
-Pupil.validate(rules, values);
+pupil.validate(rules, values);
 ```
 
 Where `rules` and `values` are objects with matching keys. The rules are specified as `rule strings`; more information on those below.
