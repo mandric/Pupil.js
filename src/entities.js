@@ -20,7 +20,7 @@
     if (typeof module !== 'undefined') {
         module.exports = entities;
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.entities = entities;
+        window.pupil = window.pupil || {};
+        window.pupil.entities = entities;
     }
 })();

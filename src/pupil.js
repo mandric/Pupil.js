@@ -1,49 +1,47 @@
 (function(undefined) {
-    var Tokens             = null;
-    var Entities           = null;
-    var ValidatorFunctions = null;
+    var tokens              = null;
+    var entities            = null;
+    var validator_functions = null;
 
-    var Lexer              = null;
-    var Parser             = null;
-    var Validator          = null;
+    var lexer               = null;
+    var parser              = null;
+    var validator           = null;
 
-    var hasInitialized     = false;
+    var hasInitialized      = false;
 
     var ruleCache = {};
 
-    var Pupil = {};
-
     var initialize = function() {
         if (typeof module !== 'undefined') {
-            Tokens             = require('./Tokens.js');
-            Entities           = require('./Entities.js');
-            ValidatorFunctions = require('./ValidatorFunctions.js');
+            tokens              = require('./tokens.js');
+            entities            = require('./entities.js');
+            validator_functions = require('./validator_functions.js');
 
-            Lexer              = require('./Lexer.js').create(Tokens);
-            Parser             = require('./Parser.js').create(Tokens, Entities);
-            Validator          = require('./Validator.js').create(ValidatorFunctions, Entities);
+            lexer               = require('./lexer.js').create(tokens);
+            parser              = require('./parser.js').create(tokens, entities);
+            validator           = require('./validator.js').create(validator_functions, entities);
         } else {
-            Tokens             = window.Pupil.tokens;
-            Entities           = window.Pupil.entities;
-            ValidatorFunctions = window.Pupil.validatorFunctions;
+            tokens              = window.pupil.tokens;
+            entities            = window.pupil.entities;
+            validator_functions = window.pupil.validator_functions;
 
-            Lexer              = new window.Pupil.lexer(Tokens);
-            Parser             = new window.Pupil.parser(Tokens, Entities);
-            Validator          = new window.Pupil.validator(ValidatorFunctions, Entities);
+            lexer               = new window.pupil.lexer(tokens);
+            parser              = new window.pupil.parser(tokens, entities);
+            validator           = new window.pupil.validator(validator_functions, entities);
         }
 
         hasInitialized = true;
     };
 
-    Pupil.addFunction = function(name, callable) {
+    var addFunction = function(name, callable) {
         if ( ! hasInitialized) {
             initialize();
         }
 
-        ValidatorFunctions[name.toLowerCase()] = callable;
+        validator_functions[name.toLowerCase()] = callable;
     };
 
-    Pupil.validate = function(rules, values) {
+    var validate = function(rules, values) {
         if ( ! hasInitialized) {
             initialize();
         }
@@ -62,13 +60,13 @@
             if (ruleCache[rule]) {
                 entities = ruleCache[rule];
             } else {
-                tokens = Lexer.tokenize(rule);
-                entities = Parser.parse(tokens);
+                tokens = lexer.tokenize(rule);
+                entities = parser.parse(tokens);
 
                 ruleCache[rule] = entities;
             }
 
-            results[index] = Validator.validate(entities.sub, values, index);
+            results[index] = validator.validate(entities.sub, values, index);
         }
 
         return results;
@@ -76,10 +74,13 @@
 
     // Export the module
     if (typeof module !== 'undefined') {
-        module.exports = Pupil;
+        module.exports = {
+            addFunction: addFunction,
+            validate: validate
+        };
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.addFunction = Pupil.addFunction;
-        window.Pupil.validate = Pupil.validate;
+        window.pupil = window.pupil || {};
+        window.pupil.addFunction = addFunction;
+        window.pupil.validate    = validate;
     }
 })();

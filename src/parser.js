@@ -199,7 +199,7 @@
             }
         };
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.parser = Parser;
+        window.pupil = window.pupil || {};
+        window.pupil.parser = Parser;
     }
 })();

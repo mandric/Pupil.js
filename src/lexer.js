@@ -117,7 +117,7 @@
             }
         };
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.lexer = Lexer;
+        window.pupil = window.pupil || {};
+        window.pupil.lexer = Lexer;
     }
 })();

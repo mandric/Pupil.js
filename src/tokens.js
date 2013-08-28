@@ -23,7 +23,7 @@
     if (typeof module !== 'undefined') {
         module.exports = tokens;
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.tokens = tokens;
+        window.pupil = window.pupil || {};
+        window.pupil.tokens = tokens;
     }
 })();
