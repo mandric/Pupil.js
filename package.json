@@ -1,6 +1,6 @@
 {
   "name": "pupil",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A string-based JavaScript validation library.",
   "main": "src/pupil.js",
   "repository": {
