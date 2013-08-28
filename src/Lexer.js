@@ -1,15 +1,16 @@
-(function(Pupil, undefined) {
-    var Lexer;
-    Pupil.lexer = Lexer = {};
+(function(undefined) {
+    var Lexer = function(tokens) {
+        this.tokens = tokens;
+    };
 
-    var Token = Pupil.tokens;
-
-    Lexer.tokenize = function(str) {
+    Lexer.prototype.tokenize = function(str) {
         str = str.replace(/([^\\])\s+/g, '$1');
 
         var chars = str.split(""),
             resultTokens = [],
             i;
+
+        var Token = this.tokens; // A shorthand
 
         var pushToken = function(name, data) {
             resultTokens.push({
@@ -39,7 +40,7 @@
             var thisChar = chars[i],
                 nextChar = chars[i + 1];
 
-            flushIdentifier = true,
+            flushIdentifier = true;
             tokensToPush = [];
             ignoreThisChar = false;
 
@@ -107,4 +108,16 @@
 
         return resultTokens;
     };
-})(window.Pupil = window.Pupil || {});
+
+    // Export the module
+    if (typeof module.exports !== 'undefined') {
+        module.exports = {
+            create: function(tokens) {
+                return new Lexer(tokens);
+            }
+        };
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.lexer = Lexer;
+    }
+})();

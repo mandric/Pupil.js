@@ -1,11 +1,14 @@
-(function(Pupil, undefined) {
-    var Validator;
-    Validator = Pupil.validator = {};
+(function(undefined) {
+    var Validator = function(validatorFunctions, entities) {
+        this.validatorFunctions = validatorFunctions;
+        this.entities = entities;
+    };
 
-    var ValidatorFunctions = Pupil.validatorFunctions;
-    var Entity = Pupil.entities;
+    Validator.prototype.validate = function(entities, values, valueKey) {
+        // A couple shorthands
+        var ValidatorFunctions = this.validatorFunctions;
+        var Entity = this.entities;
 
-    Validator.validate = function(entities, values, valueKey) {
         var validationResult = true;
         var logicalOperator = 1; // 1 = AND, 2 = OR
         var negateNext = false;
@@ -68,4 +71,16 @@
 
         return validationResult;
     };
-})(window.Pupil = window.Pupil || {});
+
+    // Export the module
+    if (typeof module.exports !== 'undefined') {
+        module.exports = {
+            create: function(validatorFunctions, entities) {
+                return new Validator(validatorFunctions, entities);
+            }
+        };
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.validator = Validator;
+    }
+})();

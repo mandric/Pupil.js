@@ -1,8 +1,8 @@
-(function(Pupil, undefined) {
-	Pupil.tokens = {};
+(function(undefined) {
+	var tokens = {};
 
 	var addToken = function(name) {
-		Pupil.tokens[name] = {
+		tokens[name] = {
 			name: name,
 			toString: function() {
 				return name;
@@ -18,4 +18,12 @@
 	addToken('LogicalNot');
 	addToken('BracketOpen');
 	addToken('BracketClose');
-})(window.Pupil = window.Pupil || {});
+
+    // Export the module
+    if (typeof module.exports !== 'undefined') {
+        module.exports = tokens;
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.tokens = tokens;
+    }
+})();

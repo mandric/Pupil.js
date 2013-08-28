@@ -1,8 +1,8 @@
-(function(Pupil, undefined) {
-	Pupil.entities = {};
+(function(undefined) {
+	var entities = {};
 
 	var addEntity = function(name) {
-		Pupil.entities[name] = {
+		entities[name] = {
 			name: name,
 			toString: function() {
 				return name;
@@ -15,4 +15,12 @@
 	addEntity('LogicalAnd');
 	addEntity('LogicalOr');
 	addEntity('LogicalNot');
-})(window.Pupil = window.Pupil || {});
+
+    // Export the module
+    if (typeof module.exports !== 'undefined') {
+        module.exports = entities;
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.entities = entities;
+    }
+})();

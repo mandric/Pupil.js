@@ -1,10 +1,4 @@
-(function(Pupil, undefined) {
-    var Parser;
-    Pupil.parser = Parser = {};
-
-    var Token  = Pupil.tokens;
-    var Entity = Pupil.entities;
-
+(function(undefined) {
     var createEntity = function(type) {
         return {
             type: type,
@@ -23,7 +17,16 @@
         this.pos = pos;
     };
 
-    Parser.parse = function(tokens) {
+    var Parser = function(tokens, entities) {
+        this.tokens = tokens;
+        this.entities = entities;
+    };
+
+    Parser.prototype.parse = function(tokens) {
+        // A couple shorthands
+        var Token = this.tokens;
+        var Entity = this.entities;
+
         var rootBlock = createEntity(Entity.Block);
         var blockStack = [rootBlock];
 
@@ -187,4 +190,16 @@
 
         return rootBlock;
     };
-})(window.Pupil = window.Pupil || {});
+
+    // Export the module
+    if (typeof module.exports !== 'undefined') {
+        module.exports = {
+            create: function(tokens, entities) {
+                return new Parser(tokens, entities);
+            }
+        };
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.parser = Parser;
+    }
+})();
