@@ -1,12 +1,15 @@
 # Pupil
 An easy and powerful string-based validation library.
 
+This is __Pupil.js__, the JavaScript version of the library.  
+A PHP version, Pupil.php, is planned.
+
 ## Features
 * Supports IE7+
 * Supports Node.js
 * Nested validation rules
 * String-based validation rules for compatibility between different languages
-* Light re-evaluation via caching
+* Light revalidation via caching
 
 ## Installation
 ### Browser
