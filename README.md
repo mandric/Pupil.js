@@ -13,7 +13,7 @@ A PHP version, Pupil.php, is planned.
 
 ## Installation
 ### Browser
-Download `dist/Pupil.min.js` and include it on your page.
+Download `dist/pupil.min.js` and include it on your page.
 
 ### Node.js
 Install the module:
@@ -83,3 +83,42 @@ The following example would require a state name of at least 2 characters for th
 	state: 'minLen:2 || (( ! otherEquals:country,US && ! otherEquals:country,CA) && minLen:0)'
 }
 ```
+
+## Validation functions
+The following functions are available by default:
+```
+equals
+iEquals      # A case-insensitive comparison
+sEquals      # A strict comparison
+siEquals
+lenMin
+lenMax
+min
+max
+between
+in           # Compare to a list of values
+required
+optional
+numeric
+alpha
+alphaNumeric
+email
+regex        # Supply a custom regex
+integer
+equalsTo     # Compare to another field by its key
+```
+
+### Adding custom functions
+You can use the following syntax to add your own validation functions:
+
+```javascript
+pupil.addFunction(name, callable);
+```
+
+Where callable should, at the very least accept two arguments: `allValues` and `value`. `allValues` is an object containing every value that's being validated at the moment while `value` contains the value we're validating at the moment. Further arguments can be passed by rule strings like so:
+
+```javascript
+customFunction:arg1,arg2
+```
+
+The function names are case-insensitive.
