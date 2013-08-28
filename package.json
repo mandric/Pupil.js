@@ -1,8 +1,8 @@
 {
-  "name": "Pupil",
+  "name": "pupil",
   "version": "1.0.0",
   "description": "A string-based JavaScript validation library.",
-  "main": "src/Pupil.js",
+  "main": "src/pupil.js",
   "repository": {
     "type": "git",
     "url": "ssh://git@bitbucket.org/Dragory/pupil-2.git"

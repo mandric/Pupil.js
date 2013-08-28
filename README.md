@@ -3,12 +3,24 @@ An easy and powerful string-based validation library.
 
 ## Features
 * Supports IE7+
+* Supports Node.js
 * Nested validation rules
 * String-based validation rules for compatibility between different languages
 * Light re-evaluation via caching
 
 ## Installation
+### Browser
 Download `dist/Pupil.min.js` and include it on your page.
+
+### Node.js
+Install the module:
+```
+npm install pupil
+```
+And then require it in your project:
+```javascript
+var Pupil = require('pupil');
+```
 
 ## Usage
 The basic syntax is this:
