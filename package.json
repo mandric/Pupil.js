@@ -5,7 +5,7 @@
   "main": "src/pupil.js",
   "repository": {
     "type": "git",
-    "url": "ssh://git@bitbucket.org/Dragory/pupil-2.git"
+    "url": "git@github.com:Dragory/Pupil.js.git"
   },
   "keywords": [
     "validate",
