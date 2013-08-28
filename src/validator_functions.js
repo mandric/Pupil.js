@@ -37,7 +37,7 @@
     if (typeof module !== 'undefined') {
         module.exports = ValidatorFunctions;
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.validatorFunctions = ValidatorFunctions;
+        window.pupil = window.pupil || {};
+        window.pupil.validator_functions = ValidatorFunctions;
     }
 })();

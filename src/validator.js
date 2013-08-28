@@ -80,7 +80,7 @@
             }
         };
     } else {
-        window.Pupil = window.Pupil || {};
-        window.Pupil.validator = Validator;
+        window.pupil = window.pupil || {};
+        window.pupil.validator = Validator;
     }
 })();
