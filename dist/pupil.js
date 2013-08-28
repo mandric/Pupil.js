@@ -180,14 +180,12 @@
         var currentBlock = blockStack[blockStack.length - 1];
         var currentFunction = null, flushFunction = true;
 
-        var accept = {
-            identifier: true,
-            logicalOp: false,
-            negator: true,
-            funcArgs: false, // Separates function name from its arguments (':')
-            argSeparator: false, // Separates arguments from each other (',')
-            block: true
-        };
+        var accept_identifier = 1;
+        var accept_logicalOp = 0;
+        var accept_negator = 1;
+        var accept_funcArgs = 0; // Separates function name from its arguments (':')
+        var accept_argSeparator = 0; // Separates arguments from each other (',')
+        var accept_block = 1;
 
         for (var i = 0; i < tokens.length; i++) {
             var thisToken = tokens[i];
@@ -196,110 +194,110 @@
             var closeBlock = false;
 
             if (thisToken.name == Token.Identifier) {
-                if ( ! accept.identifier) { throw new ParserException("Got an identifier, was not expecting one", i); }
+                if ( ! accept_identifier) { throw new ParserException("Unexpected identifier", i); }
 
                 flushFunction = false;
 
                 if (currentFunction) { // Arguments for an already created function
                     currentFunction.funcArgs.push(thisToken.data);
 
-                    accept.identifier   = false;
-                    accept.logicalOp    = true;
-                    accept.funcArgs     = false;
-                    accept.argSeparator = true;
-                    accept.block        = true;
-                    accept.negator      = false;
+                    accept_identifier   = 0;
+                    accept_logicalOp    = 1;
+                    accept_funcArgs     = 0;
+                    accept_argSeparator = 1;
+                    accept_block        = 1;
+                    accept_negator      = 0;
                 } else { // A new function
                     currentFunction = createEntity(Entity.Func);
                     currentFunction.funcName = thisToken.data;
 
-                    accept.identifier   = false;
-                    accept.logicalOp    = true;
-                    accept.funcArgs     = true;
-                    accept.argSeparator = false;
-                    accept.block        = false;
-                    accept.negator      = false;
+                    accept_identifier   = 0;
+                    accept_logicalOp    = 1;
+                    accept_funcArgs     = 1;
+                    accept_argSeparator = 0;
+                    accept_block        = 0;
+                    accept_negator      = 0;
                 }
             } else if (thisToken.name == Token.Colon) {
-                if ( ! accept.funcArgs) { throw new ParserException("Got function arguments, was not expecting them", i); }
+                if ( ! accept_funcArgs) { throw new ParserException("Unexpected function arguments", i); }
 
                 flushFunction = false;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = false;
-                accept.negator      = false;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 0;
+                accept_negator      = 0;
             } else if (thisToken.name == Token.Comma) {
-                if ( ! accept.argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
+                if ( ! accept_argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
 
                 flushFunction = false;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = false;
-                accept.negator      = false;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 0;
+                accept_negator      = 0;
             } else if (thisToken.name == Token.LogicalAnd) {
-                if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (AND), was not expecting one", i); }
+                if ( ! accept_logicalOp) { throw new ParserException("Unexpected logical AND", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalAnd));
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = true;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 1;
             } else if (thisToken.name == Token.LogicalOr) {
-                if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (OR), was not expecting one", i); }
+                if ( ! accept_logicalOp) { throw new ParserException("Unexpected logical OR", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalOr));
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = true;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 1;
             } else if (thisToken.name == Token.LogicalNot) {
-                if ( ! accept.negator) { throw new ParserException("Got a logical operator (NOT), was not expecting one", i); }
+                if ( ! accept_negator) { throw new ParserException("Unexpected logical NOT", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalNot));
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = false;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 0;
             } else if (thisToken.name == Token.BracketOpen) {
-                if ( ! accept.block) { throw new ParserException("Got an opening bracket, was not expecting one", i); }
+                if ( ! accept_block) { throw new ParserException("Unexpected opening bracket", i); }
 
                 openNewBlock = true;
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = true;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 1;
             } else if (thisToken.name == Token.BracketClose) {
                 closeBlock = true;
                 flushFunction = true;
 
-                accept.identifier   = false;
-                accept.logicalOp    = true;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = false;
-                accept.negator      = false;
+                accept_identifier   = 0;
+                accept_logicalOp    = 1;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 0;
+                accept_negator      = 0;
             }
 
             if (i == tokens.length - 1) {
@@ -556,93 +554,95 @@
         email: new RegExp(/^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?/i)
     };
 
-    ValidatorFunctions.equals = function(allValues, value, equalsTo) {
-        return value == equalsTo;
-    };
+    ValidatorFunctions = {
+        equals: function(allValues, value, equalsTo) {
+            return value == equalsTo;
+        },
 
-    ValidatorFunctions.iequals = function(allValues, value, equalsTo) {
-        return value.toLowerCase() == equalsTo.toLowerCase();
-    };
+        iequals: function(allValues, value, equalsTo) {
+            return value.toLowerCase() == equalsTo.toLowerCase();
+        },
 
-    ValidatorFunctions.sequals = function(allValues, value, equalsTo) {
-        return value === equalsTo;
-    };
+        sequals: function(allValues, value, equalsTo) {
+            return value === equalsTo;
+        },
 
-    ValidatorFunctions.siequals = function(allValues, value, equalsTo) {
-        return value.toLowerCase() === equalsTo.toLowerCase();
-    };
+        siequals: function(allValues, value, equalsTo) {
+            return value.toLowerCase() === equalsTo.toLowerCase();
+        },
 
-    ValidatorFunctions.lenmin = function(allValues, value, min) {
-        return value.length >= min;
-    };
+        lenmin: function(allValues, value, min) {
+            return value.length >= min;
+        },
 
-    ValidatorFunctions.lenmax = function(allValues, value, max) {
-        return value.length <= max;
-    };
+        lenmax: function(allValues, value, max) {
+            return value.length <= max;
+        },
 
-    ValidatorFunctions.min = function(allValues, value, min) {
-        return parseFloat(value, 10) >= min;
-    };
+        min: function(allValues, value, min) {
+            return parseFloat(value, 10) >= min;
+        },
 
-    ValidatorFunctions.max = function(allValues, value, max) {
-        return parseFloat(value, 10) <= max;
-    };
+        max: function(allValues, value, max) {
+            return parseFloat(value, 10) <= max;
+        },
 
-    ValidatorFunctions.between = function(allValues, value, min, max) {
-        var numVal = parseFloat(value, 10);
-        return ((numVal >= min) && (numVal <= max));
-    };
+        between: function(allValues, value, min, max) {
+            var numVal = parseFloat(value, 10);
+            return ((numVal >= min) && (numVal <= max));
+        },
 
-    ValidatorFunctions.in = function(allValues, value) {
-        var args = Array.prototype.slice.call(arguments);
-        args.shift();
-        args.shift();
+        in: function(allValues, value) {
+            var args = Array.prototype.slice.call(arguments);
+            args.shift();
+            args.shift();
 
-        var inList = args;
-        for (var i = 0; i < inList.length; i++) {
-            if (inList[i] == value) return true;
+            var inList = args;
+            for (var i = 0; i < inList.length; i++) {
+                if (inList[i] == value) return true;
+            }
+
+            return false;
+        },
+
+        required: function(allValues, value) {
+            return !!value;
+        },
+
+        optional: function(allValues, value) {
+            return true;
+        },
+
+        numeric: function(allValues, value) {
+            // http://stackoverflow.com/a/1830844/316944
+            return ! isNaN(parseFloat(value)) && isFinite(value);
+        },
+
+        alpha: function(allValues, value) {
+            return re.alpha.test(value);
+        },
+
+        alphanumeric: function(allValues, value) {
+            return re.alphanumeric.test(value);
+        },
+
+        email: function(allValues, value) {
+            // http://stackoverflow.com/a/2855946/316944
+            return re.email.test(value);
+        },
+
+        regex: function(allValues, value, regex, flags) {
+            flags = flags || "";
+            return (new RegExp(regex, flags)).test(value);
+        },
+
+        integer: function(allValues, value) {
+            return parseInt(value, 10) == value;
+        },
+
+        equalsto: function(allValues, value, equalsToKey) {
+            return value == allValues[equalsToKey];
         }
-
-        return false;
-    };
-
-    ValidatorFunctions.required = function(allValues, value) {
-        return !!value;
-    };
-
-    ValidatorFunctions.optional = function(allValues, value) {
-        return true;
-    };
-
-    ValidatorFunctions.numeric = function(allValues, value) {
-        // http://stackoverflow.com/a/1830844/316944
-        return ! isNaN(parseFloat(value)) && isFinite(value);
-    };
-
-    ValidatorFunctions.alpha = function(allValues, value) {
-        return re.alpha.test(value);
-    };
-
-    ValidatorFunctions.alphanumeric = function(allValues, value) {
-        return re.alphanumeric.test(value);
-    };
-
-    ValidatorFunctions.email = function(allValues, value) {
-        // http://stackoverflow.com/a/2855946/316944
-        return re.email.test(value);
-    };
-
-    ValidatorFunctions.regex = function(allValues, value, regex, flags) {
-        flags = flags || "";
-        return (new RegExp(regex, flags)).test(value);
-    };
-
-    ValidatorFunctions.integer = function(allValues, value) {
-        return parseInt(value, 10) == value;
-    };
-
-    ValidatorFunctions.equalsto = function(allValues, value, equalsToKey) {
-        return value == allValues[equalsToKey];
     };
 
     // Export the module

@@ -33,14 +33,12 @@
         var currentBlock = blockStack[blockStack.length - 1];
         var currentFunction = null, flushFunction = true;
 
-        var accept = {
-            identifier: true,
-            logicalOp: false,
-            negator: true,
-            funcArgs: false, // Separates function name from its arguments (':')
-            argSeparator: false, // Separates arguments from each other (',')
-            block: true
-        };
+        var accept_identifier = 1;
+        var accept_logicalOp = 0;
+        var accept_negator = 1;
+        var accept_funcArgs = 0; // Separates function name from its arguments (':')
+        var accept_argSeparator = 0; // Separates arguments from each other (',')
+        var accept_block = 1;
 
         for (var i = 0; i < tokens.length; i++) {
             var thisToken = tokens[i];
@@ -49,110 +47,110 @@
             var closeBlock = false;
 
             if (thisToken.name == Token.Identifier) {
-                if ( ! accept.identifier) { throw new ParserException("Got an identifier, was not expecting one", i); }
+                if ( ! accept_identifier) { throw new ParserException("Unexpected identifier", i); }
 
                 flushFunction = false;
 
                 if (currentFunction) { // Arguments for an already created function
                     currentFunction.funcArgs.push(thisToken.data);
 
-                    accept.identifier   = false;
-                    accept.logicalOp    = true;
-                    accept.funcArgs     = false;
-                    accept.argSeparator = true;
-                    accept.block        = true;
-                    accept.negator      = false;
+                    accept_identifier   = 0;
+                    accept_logicalOp    = 1;
+                    accept_funcArgs     = 0;
+                    accept_argSeparator = 1;
+                    accept_block        = 1;
+                    accept_negator      = 0;
                 } else { // A new function
                     currentFunction = createEntity(Entity.Func);
                     currentFunction.funcName = thisToken.data;
 
-                    accept.identifier   = false;
-                    accept.logicalOp    = true;
-                    accept.funcArgs     = true;
-                    accept.argSeparator = false;
-                    accept.block        = false;
-                    accept.negator      = false;
+                    accept_identifier   = 0;
+                    accept_logicalOp    = 1;
+                    accept_funcArgs     = 1;
+                    accept_argSeparator = 0;
+                    accept_block        = 0;
+                    accept_negator      = 0;
                 }
             } else if (thisToken.name == Token.Colon) {
-                if ( ! accept.funcArgs) { throw new ParserException("Got function arguments, was not expecting them", i); }
+                if ( ! accept_funcArgs) { throw new ParserException("Unexpected function arguments", i); }
 
                 flushFunction = false;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = false;
-                accept.negator      = false;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 0;
+                accept_negator      = 0;
             } else if (thisToken.name == Token.Comma) {
-                if ( ! accept.argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
+                if ( ! accept_argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
 
                 flushFunction = false;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = false;
-                accept.negator      = false;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 0;
+                accept_negator      = 0;
             } else if (thisToken.name == Token.LogicalAnd) {
-                if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (AND), was not expecting one", i); }
+                if ( ! accept_logicalOp) { throw new ParserException("Unexpected logical AND", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalAnd));
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = true;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 1;
             } else if (thisToken.name == Token.LogicalOr) {
-                if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (OR), was not expecting one", i); }
+                if ( ! accept_logicalOp) { throw new ParserException("Unexpected logical OR", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalOr));
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = true;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 1;
             } else if (thisToken.name == Token.LogicalNot) {
-                if ( ! accept.negator) { throw new ParserException("Got a logical operator (NOT), was not expecting one", i); }
+                if ( ! accept_negator) { throw new ParserException("Unexpected logical NOT", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalNot));
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = false;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 0;
             } else if (thisToken.name == Token.BracketOpen) {
-                if ( ! accept.block) { throw new ParserException("Got an opening bracket, was not expecting one", i); }
+                if ( ! accept_block) { throw new ParserException("Unexpected opening bracket", i); }
 
                 openNewBlock = true;
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = true;
-                accept.negator      = true;
+                accept_identifier   = 1;
+                accept_logicalOp    = 0;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 1;
+                accept_negator      = 1;
             } else if (thisToken.name == Token.BracketClose) {
                 closeBlock = true;
                 flushFunction = true;
 
-                accept.identifier   = false;
-                accept.logicalOp    = true;
-                accept.funcArgs     = false;
-                accept.argSeparator = false;
-                accept.block        = false;
-                accept.negator      = false;
+                accept_identifier   = 0;
+                accept_logicalOp    = 1;
+                accept_funcArgs     = 0;
+                accept_argSeparator = 0;
+                accept_block        = 0;
+                accept_negator      = 0;
             }
 
             if (i == tokens.length - 1) {
