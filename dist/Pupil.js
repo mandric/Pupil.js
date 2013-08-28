@@ -1,8 +1,8 @@
-(function(Pupil, undefined) {
-	Pupil.entities = {};
+(function(undefined) {
+	var entities = {};
 
 	var addEntity = function(name) {
-		Pupil.entities[name] = {
+		entities[name] = {
 			name: name,
 			toString: function() {
 				return name;
@@ -15,18 +15,27 @@
 	addEntity('LogicalAnd');
 	addEntity('LogicalOr');
 	addEntity('LogicalNot');
-})(window.Pupil = window.Pupil || {});;(function(Pupil, undefined) {
-    var Lexer;
-    Pupil.lexer = Lexer = {};
 
-    var Token = Pupil.tokens;
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = entities;
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.entities = entities;
+    }
+})();;(function(undefined) {
+    var Lexer = function(tokens) {
+        this.tokens = tokens;
+    };
 
-    Lexer.tokenize = function(str) {
+    Lexer.prototype.tokenize = function(str) {
         str = str.replace(/([^\\])\s+/g, '$1');
 
         var chars = str.split(""),
             resultTokens = [],
             i;
+
+        var Token = this.tokens; // A shorthand
 
         var pushToken = function(name, data) {
             resultTokens.push({
@@ -38,7 +47,8 @@
         // If we're "building" an identifier, store it here until we flush it
         var tempIdentifier = "";
 
-        // When a char is escaped, treat it as an identifier
+        // When a char is escaped, treat it as an identifier even if it would
+        // otherwise be resolved to a different token
         var treatNextAsIdentifier = false;
 
         // Whether we should flush the identifier we're building
@@ -55,7 +65,7 @@
             var thisChar = chars[i],
                 nextChar = chars[i + 1];
 
-            flushIdentifier = true,
+            flushIdentifier = true;
             tokensToPush = [];
             ignoreThisChar = false;
 
@@ -123,13 +133,19 @@
 
         return resultTokens;
     };
-})(window.Pupil = window.Pupil || {});;(function(Pupil, undefined) {
-    var Parser;
-    Pupil.parser = Parser = {};
 
-    var Token  = Pupil.tokens;
-    var Entity = Pupil.entities;
-
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = {
+            create: function(tokens) {
+                return new Lexer(tokens);
+            }
+        };
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.lexer = Lexer;
+    }
+})();;(function(undefined) {
     var createEntity = function(type) {
         return {
             type: type,
@@ -137,7 +153,7 @@
             // Used for "Block" type entities
             sub: [],
 
-            // Used for "Function" type entities
+            // Used for "Func" (Function) type entities
             funcName: "",
             funcArgs: []
         };
@@ -148,7 +164,16 @@
         this.pos = pos;
     };
 
-    Parser.parse = function(tokens) {
+    var Parser = function(tokens, entities) {
+        this.tokens = tokens;
+        this.entities = entities;
+    };
+
+    Parser.prototype.parse = function(tokens) {
+        // A couple shorthands
+        var Token = this.tokens;
+        var Entity = this.entities;
+
         var rootBlock = createEntity(Entity.Block);
         var blockStack = [rootBlock];
 
@@ -158,14 +183,13 @@
         var accept = {
             identifier: true,
             logicalOp: false,
+            negator: true,
             funcArgs: false, // Separates function name from its arguments (':')
             argSeparator: false, // Separates arguments from each other (',')
             block: true
         };
 
         for (var i = 0; i < tokens.length; i++) {
-            console.log(currentBlock);
-
             var thisToken = tokens[i];
             var entitiesToPush = [];
             var openNewBlock = false;
@@ -184,6 +208,7 @@
                     accept.funcArgs     = false;
                     accept.argSeparator = true;
                     accept.block        = true;
+                    accept.negator      = false;
                 } else { // A new function
                     currentFunction = createEntity(Entity.Func);
                     currentFunction.funcName = thisToken.data;
@@ -193,6 +218,7 @@
                     accept.funcArgs     = true;
                     accept.argSeparator = false;
                     accept.block        = false;
+                    accept.negator      = false;
                 }
             } else if (thisToken.name == Token.Colon) {
                 if ( ! accept.funcArgs) { throw new ParserException("Got function arguments, was not expecting them", i); }
@@ -204,8 +230,9 @@
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
                 accept.block        = false;
+                accept.negator      = false;
             } else if (thisToken.name == Token.Comma) {
-                if ( ! accept.funcArgs) { throw new ParserException("Got function arguments, was not expecting them", i); }
+                if ( ! accept.argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
 
                 flushFunction = false;
 
@@ -214,6 +241,7 @@
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
                 accept.block        = false;
+                accept.negator      = false;
             } else if (thisToken.name == Token.LogicalAnd) {
                 if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (AND), was not expecting one", i); }
 
@@ -225,6 +253,7 @@
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
                 accept.block        = true;
+                accept.negator      = true;
             } else if (thisToken.name == Token.LogicalOr) {
                 if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (OR), was not expecting one", i); }
 
@@ -236,8 +265,9 @@
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
                 accept.block        = true;
+                accept.negator      = true;
             } else if (thisToken.name == Token.LogicalNot) {
-                if ( ! accept.logicalOp) { throw new ParserException("Got a logical operator (NOT), was not expecting one", i); }
+                if ( ! accept.negator) { throw new ParserException("Got a logical operator (NOT), was not expecting one", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalNot));
                 flushFunction = true;
@@ -247,6 +277,7 @@
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
                 accept.block        = true;
+                accept.negator      = false;
             } else if (thisToken.name == Token.BracketOpen) {
                 if ( ! accept.block) { throw new ParserException("Got an opening bracket, was not expecting one", i); }
 
@@ -258,15 +289,17 @@
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
                 accept.block        = true;
+                accept.negator      = true;
             } else if (thisToken.name == Token.BracketClose) {
                 closeBlock = true;
                 flushFunction = true;
 
-                accept.identifier   = true;
-                accept.logicalOp    = false;
+                accept.identifier   = false;
+                accept.logicalOp    = true;
                 accept.funcArgs     = false;
                 accept.argSeparator = false;
-                accept.block        = true;
+                accept.block        = false;
+                accept.negator      = false;
             }
 
             if (i == tokens.length - 1) {
@@ -304,17 +337,107 @@
 
         return rootBlock;
     };
-})(window.Pupil = window.Pupil || {});;(function(Pupil, undefined) {
-	var ValidatorFunctions = Pupil.validatorFunctions;
 
-	Pupil.addFunction = function(name, callable) {
-		ValidatorFunctions[name.toLowerCase()] = callable;
-	};
-})(window.Pupil = window.Pupil || {});;(function(Pupil, undefined) {
-	Pupil.tokens = {};
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = {
+            create: function(tokens, entities) {
+                return new Parser(tokens, entities);
+            }
+        };
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.parser = Parser;
+    }
+})();;(function(undefined) {
+    var Tokens             = null;
+    var Entities           = null;
+    var ValidatorFunctions = null;
+
+    var Lexer              = null;
+    var Parser             = null;
+    var Validator          = null;
+
+    var hasInitialized     = false;
+
+    var ruleCache = {};
+
+    var Pupil = {};
+
+    var initialize = function() {
+        if (typeof module !== 'undefined') {
+            Tokens             = require('./Tokens.js');
+            Entities           = require('./Entities.js');
+            ValidatorFunctions = require('./ValidatorFunctions.js');
+
+            Lexer              = require('./Lexer.js').create(Tokens);
+            Parser             = require('./Parser.js').create(Tokens, Entities);
+            Validator          = require('./Validator.js').create(ValidatorFunctions, Entities);
+        } else {
+            Tokens             = window.Pupil.tokens;
+            Entities           = window.Pupil.entities;
+            ValidatorFunctions = window.Pupil.validatorFunctions;
+
+            Lexer              = new window.Pupil.lexer(Tokens);
+            Parser             = new window.Pupil.parser(Tokens, Entities);
+            Validator          = new window.Pupil.validator(ValidatorFunctions, Entities);
+        }
+
+        hasInitialized = true;
+    };
+
+    Pupil.addFunction = function(name, callable) {
+        if ( ! hasInitialized) {
+            initialize();
+        }
+
+        ValidatorFunctions[name.toLowerCase()] = callable;
+    };
+
+    Pupil.validate = function(rules, values) {
+        if ( ! hasInitialized) {
+            initialize();
+        }
+        
+        var results = {};
+
+        for (var index in values) {
+            var rule = rules[index],
+                tokens, entities;
+
+            if ( ! rule) {
+                results[index] = true;
+                continue;
+            }
+
+            if (ruleCache[rule]) {
+                entities = ruleCache[rule];
+            } else {
+                tokens = Lexer.tokenize(rule);
+                entities = Parser.parse(tokens);
+
+                ruleCache[rule] = entities;
+            }
+
+            results[index] = Validator.validate(entities.sub, values, index);
+        }
+
+        return results;
+    };
+
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = Pupil;
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.addFunction = Pupil.addFunction;
+        window.Pupil.validate = Pupil.validate;
+    }
+})();;(function(undefined) {
+	var tokens = {};
 
 	var addToken = function(name) {
-		Pupil.tokens[name] = {
+		tokens[name] = {
 			name: name,
 			toString: function() {
 				return name;
@@ -330,14 +453,25 @@
 	addToken('LogicalNot');
 	addToken('BracketOpen');
 	addToken('BracketClose');
-})(window.Pupil = window.Pupil || {});;(function(Pupil, undefined) {
-    var Validator;
-    Validator = Pupil.validator = {};
 
-    var ValidatorFunctions = Pupil.validatorFunctions;
-    var Entity = Pupil.entities;
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = tokens;
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.tokens = tokens;
+    }
+})();;(function(undefined) {
+    var Validator = function(validatorFunctions, entities) {
+        this.validatorFunctions = validatorFunctions;
+        this.entities = entities;
+    };
 
-    Validator.validate = function(entities, values, valueKey) {
+    Validator.prototype.validate = function(entities, values, valueKey) {
+        // A couple shorthands
+        var ValidatorFunctions = this.validatorFunctions;
+        var Entity = this.entities;
+
         var validationResult = true;
         var logicalOperator = 1; // 1 = AND, 2 = OR
         var negateNext = false;
@@ -355,10 +489,16 @@
                 negateNext = true;
             } else if (thisEntity.type == Entity.Func) {
                 var funcName = thisEntity.funcName.toLowerCase(),
-                    funcArgs = thisEntity.funcArgs;
+                    funcArgs = [];
+
+                // Clone the function arguments so below we don't affect
+                // the original arguments in the entity.
+                for (var a = 0; a < thisEntity.funcArgs.length; a++) {
+                    funcArgs.push(thisEntity.funcArgs[a]);
+                }
 
                 if (funcName.substr(0, 5) == 'other') {
-                    funcName = substr(5); // Remove the "other" from the start
+                    funcName = funcName.substr(5); // Remove the "other" from the start
 
                     // Get the values array key of the "other" value
                     var otherValueKey = funcArgs.shift();
@@ -370,8 +510,10 @@
                 funcArgs.unshift(values);
 
                 tempResult = ValidatorFunctions[funcName].apply(this, funcArgs);
+                useTempResult = true;
             } else if (thisEntity.type == Entity.Block) {
-                tempResult = Validator.validate(thisEntity, values, valueKey);
+                tempResult = this.validate(thisEntity.sub, values, valueKey);
+                useTempResult = true;
             }
 
             if (useTempResult) {
@@ -385,20 +527,65 @@
                 } else {
                     validationResult = validationResult || tempResult;
                 }
+
+                useTempResult = false;
             }
         }
 
         return validationResult;
     };
-})(window.Pupil = window.Pupil || {});;(function(Pupil, undefined) {
-	var ValidatorFunctions;
-	Pupil.validatorFunctions = ValidatorFunctions = {};
 
-	ValidatorFunctions.min = function(allValues, value, min) {
-		return parseInt(value, 10) >= min;
-	};
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = {
+            create: function(validatorFunctions, entities) {
+                return new Validator(validatorFunctions, entities);
+            }
+        };
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.validator = Validator;
+    }
+})();;(function(undefined) {
+    var ValidatorFunctions = {};
 
-	ValidatorFunctions.max = function(allValues, value, max) {
-		return parseInt(value, 10) <= max;
-	};
-})(window.Pupil = window.Pupil || {});
+    ValidatorFunctions.equals = function(allValues, value, equalsTo) {
+        return value == equalsTo;
+    };
+
+    ValidatorFunctions.iequals = function(allValues, value, equalsTo) {
+        return value.toLowerCase() == equalsTo.toLowerCase();
+    };
+
+    ValidatorFunctions.sequals = function(allValues, value, equalsTo) {
+        return value === equalsTo;
+    };
+
+    ValidatorFunctions.siequals = function(allValues, value, equalsTo) {
+        return value.toLowerCase() === equalsTo.toLowerCase();
+    };
+
+    ValidatorFunctions.lenmin = function(allValues, value, min) {
+        return value.length >= min;
+    };
+
+    ValidatorFunctions.lenmax = function(allValues, value, max) {
+        return value.length <= max;
+    };
+
+    ValidatorFunctions.min = function(allValues, value, min) {
+        return parseInt(value, 10) >= min;
+    };
+
+    ValidatorFunctions.max = function(allValues, value, max) {
+        return parseInt(value, 10) <= max;
+    };
+
+    // Export the module
+    if (typeof module !== 'undefined') {
+        module.exports = ValidatorFunctions;
+    } else {
+        window.Pupil = window.Pupil || {};
+        window.Pupil.validatorFunctions = ValidatorFunctions;
+    }
+})();

@@ -20,7 +20,7 @@
 	addToken('BracketClose');
 
     // Export the module
-    if (typeof module.exports !== 'undefined') {
+    if (typeof module !== 'undefined') {
         module.exports = tokens;
     } else {
         window.Pupil = window.Pupil || {};

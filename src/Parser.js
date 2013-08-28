@@ -192,7 +192,7 @@
     };
 
     // Export the module
-    if (typeof module.exports !== 'undefined') {
+    if (typeof module !== 'undefined') {
         module.exports = {
             create: function(tokens, entities) {
                 return new Parser(tokens, entities);

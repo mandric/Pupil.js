@@ -49,7 +49,7 @@
                 tempResult = ValidatorFunctions[funcName].apply(this, funcArgs);
                 useTempResult = true;
             } else if (thisEntity.type == Entity.Block) {
-                tempResult = Validator.validate(thisEntity.sub, values, valueKey);
+                tempResult = this.validate(thisEntity.sub, values, valueKey);
                 useTempResult = true;
             }
 
@@ -73,7 +73,7 @@
     };
 
     // Export the module
-    if (typeof module.exports !== 'undefined') {
+    if (typeof module !== 'undefined') {
         module.exports = {
             create: function(validatorFunctions, entities) {
                 return new Validator(validatorFunctions, entities);

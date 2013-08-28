@@ -110,7 +110,7 @@
     };
 
     // Export the module
-    if (typeof module.exports !== 'undefined') {
+    if (typeof module !== 'undefined') {
         module.exports = {
             create: function(tokens) {
                 return new Lexer(tokens);

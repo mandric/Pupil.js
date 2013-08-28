@@ -17,7 +17,7 @@
 	addEntity('LogicalNot');
 
     // Export the module
-    if (typeof module.exports !== 'undefined') {
+    if (typeof module !== 'undefined') {
         module.exports = entities;
     } else {
         window.Pupil = window.Pupil || {};
