@@ -93,7 +93,7 @@ on other values than the one the rule string is for. This can be useful for fiel
 
 ```javascript
 {
-	state: 'otherEquals("country", "US") ? lenMin(2) : lenMin(0))'
+	state: 'otherEquals("country", "US") ? lenMin(2) : lenMin(0)'
 }
 ```
 
