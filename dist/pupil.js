@@ -12,6 +12,7 @@
 
 	addEntity('Block');
 	addEntity('Func');
+	addEntity('Ternary');
 	addEntity('LogicalAnd');
 	addEntity('LogicalOr');
 	addEntity('LogicalNot');
@@ -29,8 +30,6 @@
     };
 
     Lexer.prototype.tokenize = function(str) {
-        str = str.replace(/([^\\])\s+/g, '$1');
-
         var chars = str.split(""),
             resultTokens = [],
             i;
@@ -43,6 +42,8 @@
                 data: data || null
             });
         };
+
+        var whiteSpaceRegex = new RegExp('^\\s+$');
 
         // If we're "building" an identifier, store it here until we flush it
         var tempIdentifier = "";
@@ -60,10 +61,18 @@
         // Sometimes we'll completely ignore a char, such as with escape symbols
         var ignoreThisChar = false;
 
+        // Are we in a string?
+        var inString = false;
+        var stringStartChar = null;
+
         // Loop through the chars
         for (i = 0; i < chars.length; i++) {
             var thisChar = chars[i],
                 nextChar = chars[i + 1];
+
+            // If we should start or end a string at the end of this loop
+            var startString = false;
+            var endString = false;
 
             flushIdentifier = true;
             tokensToPush = [];
@@ -73,11 +82,28 @@
             // skip the tokens, go straight to the identifier part
             if (treatNextAsIdentifier) {
                 treatNextAsIdentifier = false;
-            }
+            
+            // String end
+            } else if (thisChar === stringStartChar) {
+                endString = true;
+                flushIdentifier = true;
+
+                tokensToPush.push([Token.StringDelimiter]);
+
+            // Strings
+            } else if (inString) {
+                // Do nothing, counts as an identifier
+
+            // String start
+            } else if (thisChar === '"' || thisChar === "'") {
+                startString = true;
+                flushIdentifier = true;
+
+                tokensToPush.push([Token.StringDelimiter]);
 
             // Escape the next char; ignore this one (because it's an escaping symbol)
             // and don't flush the identifier (as the next char will be added to it).
-            else if (thisChar == '\\') {
+            } else if (thisChar == '\\') {
                 treatNextAsIdentifier = true;
                 ignoreThisChar = true;
                 flushIdentifier = false;
@@ -88,6 +114,8 @@
                 tokensToPush.push([Token.Comma]);
             } else if (thisChar == ':') {
                 tokensToPush.push([Token.Colon]);
+            } else if (thisChar == '?') {
+                tokensToPush.push([Token.QuestionMark]);
             } else if (thisChar == '&' && nextChar == '&') {
                 tokensToPush.push([Token.LogicalAnd]);
                 i++;
@@ -100,6 +128,8 @@
                 tokensToPush.push([Token.BracketOpen]);
             } else if (thisChar == ')') {
                 tokensToPush.push([Token.BracketClose]);
+            } else if (whiteSpaceRegex.test(thisChar)) {
+                ignoreThisChar = true;
             }
 
             // If there is no token to push and we're not ignoring
@@ -119,9 +149,28 @@
             // Flushing the identifier means pushing an identifier
             // token with the current "tempIdentifier" as the data
             // and then emptying the temporary identifier.
+            // 
+            // The identifier can be pushed as a string, a number or an identifier.
             if (flushIdentifier && tempIdentifier !== "") {
-                tokensToPush.unshift([Token.Identifier, tempIdentifier]);
+                if (inString) {
+                    tokensToPush.unshift([Token.String, tempIdentifier]);
+                } else if ( ! isNaN(parseFloat(tempIdentifier, 10)) && isFinite(tempIdentifier)) {
+                    tokensToPush.unshift([Token.Number, tempIdentifier]);
+                } else {
+                    tokensToPush.unshift([Token.Identifier, tempIdentifier]);
+                }
+
                 tempIdentifier = "";
+            }
+
+            if (startString) {
+                inString = true;
+                stringStartChar = thisChar;
+            }
+
+            if (endString) {
+                inString = false;
+                stringStartChar = null;
             }
 
             if (tokensToPush.length > 0) {
@@ -150,12 +199,17 @@
         return {
             type: type,
 
-            // Used for "Block" type entities
+            // Used for "Block" and "Ternary" type entities
             sub: [],
 
             // Used for "Func" (Function) type entities
             funcName: "",
-            funcArgs: []
+            funcArgs: [],
+
+            // Used for "Ternary" type entities
+            conditions: [],
+            ifThen: null,
+            ifElse: null
         };
     };
 
@@ -180,130 +234,184 @@
         var currentBlock = blockStack[blockStack.length - 1];
         var currentFunction = null, flushFunction = true;
 
-        var accept_identifier = 1;
-        var accept_logicalOp = 0;
-        var accept_negator = 1;
-        var accept_funcArgs = 0; // Separates function name from its arguments (':')
-        var accept_argSeparator = 0; // Separates arguments from each other (',')
-        var accept_block = 1;
+        var inString = false;
+
+        var accept = {
+            'identifier': 0,
+            'string': 0,
+            'number': 0,
+            'logicalOp': 0,
+            'negator': 0,
+            'funcArgsStart': 0, // Starts a function's arguments after its name ('(')
+            'funcArgsEnd': 0,   // Ends a function's arguments (')')
+            'argSeparator': 0,  // Separates arguments from each other (',')
+            'blockStart': 0,
+            'blockEnd': 0,
+            'ternaryThen': 0,
+            'ternaryElse': 0
+        };
+
+        var expectOneOf = function(oneOf) {
+            // First reset the tokens we'll accept
+            for (var index in accept) {
+                accept[index] = 0;
+            }
+
+            // And accept the tokens listed as our argument array
+            for (var i = 0; i < oneOf.length; i++) {
+                if (typeof accept[oneOf[i]] !== 'undefined') {
+                    accept[oneOf[i]] = 1;
+                }
+            }
+        };
+
+        expectOneOf(['identifier', 'negator', 'blockStart']);
 
         for (var i = 0; i < tokens.length; i++) {
             var thisToken = tokens[i];
             var entitiesToPush = [];
             var openNewBlock = false;
             var closeBlock = false;
+            var closeTernary = false;
 
-            if (thisToken.name == Token.Identifier) {
-                if ( ! accept_identifier) { throw new ParserException("Unexpected identifier", i); }
+            // Arguments for an already created function
+            if (thisToken.name == Token.String || thisToken.name == Token.Number) {
+                if ( ! accept.string) { throw new ParserException("Unexpected string", i); }
+                if ( ! accept.number) { throw new ParserException("Unexpected number", i); }
 
                 flushFunction = false;
+                
+                // String arguments
+                if (thisToken.name == Token.String) {
+                    currentFunction.funcArgs.push(thisToken.data.toString());
 
-                if (currentFunction) { // Arguments for an already created function
-                    currentFunction.funcArgs.push(thisToken.data);
-
-                    accept_identifier   = 0;
-                    accept_logicalOp    = 1;
-                    accept_funcArgs     = 0;
-                    accept_argSeparator = 1;
-                    accept_block        = 1;
-                    accept_negator      = 0;
-                } else { // A new function
-                    currentFunction = createEntity(Entity.Func);
-                    currentFunction.funcName = thisToken.data;
-
-                    accept_identifier   = 0;
-                    accept_logicalOp    = 1;
-                    accept_funcArgs     = 1;
-                    accept_argSeparator = 0;
-                    accept_block        = 0;
-                    accept_negator      = 0;
+                // Number arguments
+                } else {
+                    currentFunction.funcArgs.push(parseFloat(thisToken.data, 10));
                 }
+
+                expectOneOf(['argSeparator', 'funcArgsEnd']);
+
+            // A new function
+            } else if (thisToken.name == Token.Identifier) {
+                if ( ! accept.identifier) { throw new ParserException("Unexpected identifier", i); }
+
+                flushFunction = false;
+
+                currentFunction = createEntity(Entity.Func);
+                currentFunction.funcName = thisToken.data;
+
+                expectOneOf(['logicalOp', 'funcArgsStart', 'blockEnd']);
+
+            // Ternary "then"/start
+            } else if (thisToken.name == Token.QuestionMark) {
+                if ( ! accept.ternaryThen) { throw new ParserException("Unexpected ternary 'then'"); }
+
+                // Start a new block that's a ternary
+                var newTernary = createEntity(Entity.Ternary);
+                newTernary.conditions = currentBlock.sub;
+
+                // Make sure the ternary's conditions aren't evaluated outside the ternary
+                currentBlock.sub = [newTernary];
+
+                // Change the current block to the new ternary
+                blockStack.push(newTernary);
+                currentBlock = blockStack[blockStack.length - 1];
+
+                expectOneOf(['identifier', 'blockStart', 'negator']);
+
+            // Ternary "else"
             } else if (thisToken.name == Token.Colon) {
-                if ( ! accept_funcArgs) { throw new ParserException("Unexpected function arguments", i); }
+                if ( ! accept.ternaryElse) { throw new ParserException("Unexpected ternary 'else'"); }
 
-                flushFunction = false;
+                currentBlock.ifThen = currentBlock.sub;
+                currentBlock.sub = [];
 
-                accept_identifier   = 1;
-                accept_logicalOp    = 0;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 0;
-                accept_negator      = 0;
+                expectOneOf(['identifier', 'blockStart', 'negator']);
+
+            // Function argument separator
             } else if (thisToken.name == Token.Comma) {
-                if ( ! accept_argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
+                if ( ! accept.argSeparator) { throw new ParserException("Unexpected function argument separator", i); }
 
                 flushFunction = false;
 
-                accept_identifier   = 1;
-                accept_logicalOp    = 0;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 0;
-                accept_negator      = 0;
+                expectOneOf(['string', 'number', 'funcArgsEnd']);
+
+            // Logical AND
             } else if (thisToken.name == Token.LogicalAnd) {
-                if ( ! accept_logicalOp) { throw new ParserException("Unexpected logical AND", i); }
+                if ( ! accept.logicalOp) { throw new ParserException("Unexpected logical AND", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalAnd));
                 flushFunction = true;
 
-                accept_identifier   = 1;
-                accept_logicalOp    = 0;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 1;
-                accept_negator      = 1;
+                expectOneOf(['identifier', 'negator', 'blockStart']);
+
+            // Logical OR
             } else if (thisToken.name == Token.LogicalOr) {
-                if ( ! accept_logicalOp) { throw new ParserException("Unexpected logical OR", i); }
+                if ( ! accept.logicalOp) { throw new ParserException("Unexpected logical OR", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalOr));
                 flushFunction = true;
 
-                accept_identifier   = 1;
-                accept_logicalOp    = 0;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 1;
-                accept_negator      = 1;
+                expectOneOf(['identifier', 'blockStart', 'negator']);
+
+            // Logical NOT (negator)
             } else if (thisToken.name == Token.LogicalNot) {
-                if ( ! accept_negator) { throw new ParserException("Unexpected logical NOT", i); }
+                if ( ! accept.negator) { throw new ParserException("Unexpected logical NOT", i); }
 
                 entitiesToPush.push(createEntity(Entity.LogicalNot));
-                flushFunction = true;
 
-                accept_identifier   = 1;
-                accept_logicalOp    = 0;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 1;
-                accept_negator      = 0;
+                expectOneOf(['identifier', 'blockStart']);
+
+            // Bracket open: function arguments start or a block start
             } else if (thisToken.name == Token.BracketOpen) {
-                if ( ! accept_block) { throw new ParserException("Unexpected opening bracket", i); }
+                // Start arguments for a function
+                if (currentFunction && accept.funcArgsStart) {
+                    flushFunction = false;
 
-                openNewBlock = true;
-                flushFunction = true;
+                    expectOneOf(['string', 'number', 'funcArgsEnd']);
+                // Or open a block
+                } else if (accept.blockStart) {
+                    openNewBlock = true;
+                    flushFunction = true;
 
-                accept_identifier   = 1;
-                accept_logicalOp    = 0;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 1;
-                accept_negator      = 1;
+                    expectOneOf(['identifier', 'blockStart', 'blockEnd', 'negator']);
+                } else {
+                    throw new ParserException("Unexpected opening bracket", i);
+                }
+
+            // Bracket close: function arguments end or a block end
             } else if (thisToken.name == Token.BracketClose) {
-                closeBlock = true;
-                flushFunction = true;
+                // End arguments for a function
+                if (currentFunction && accept.funcArgsEnd) {
+                    flushFunction = true;
 
-                accept_identifier   = 0;
-                accept_logicalOp    = 1;
-                accept_funcArgs     = 0;
-                accept_argSeparator = 0;
-                accept_block        = 0;
-                accept_negator      = 0;
+                    expectOneOf(['logicalOp', 'blockEnd', 'ternaryThen', 'ternaryElse']);
+                // Or close a block
+                } else if (accept.blockEnd) {
+                    closeBlock = true;
+                    flushFunction = true;
+
+                    flushTernaryElse = true;
+                    flushTernary = true;
+
+                    expectOneOf(['logicalOp', 'blockEnd', 'ternaryThen', 'ternaryElse']);
+                } else {
+                    throw new ParserException("Unexpected closing bracket", i);
+                }
             }
 
             if (i == tokens.length - 1) {
+                // Make sure to flush the function if we're still gathering one's
+                // arguments when we've handled all of the tokens.
                 flushFunction = true;
+
+                // Also, if we have an outstanding ternary, close it
+                closeTernary = true;
             }
 
+            // If we've finished gathering a function's name and arguments,
+            // "flush" it to the current block's entities
             if (flushFunction && currentFunction) {
                 entitiesToPush.unshift(currentFunction);
                 currentFunction = null;
@@ -323,6 +431,23 @@
                 currentBlock = blockStack[blockStack.length - 1];
             }
 
+            // Close ternaries along with blocks when blocks would normally be
+            // closed as there is not a symbol for closing ternaries specifically.
+            // Flush the outstanding sub-entities to the ternary's "then" or "else" properties.
+            if ((closeTernary || closeBlock) && currentBlock.type == Entity.Ternary) {
+
+                if (currentBlock.ifThen !== null) {
+                    currentBlock.ifElse = currentBlock.sub;
+                } else {
+                    currentBlock.ifThen = currentBlock.sub;
+                }
+
+                currentBlock.sub = [];
+
+                blockStack.pop();
+                currentBlock = blockStack[blockStack.length - 1];
+            }
+
             if (closeBlock) {
                 if (blockStack.length === 1) { throw new ParserException("Can't close the root block.", i); }
 
@@ -333,7 +458,7 @@
 
         if (blockStack.length > 1) { throw new ParserException("All blocks weren't closed."); }
 
-        return rootBlock;
+        return [rootBlock];
     };
 
     // Export the module
@@ -415,7 +540,7 @@
                 ruleCache[rule] = entities;
             }
 
-            results[index] = validator.validate(entities.sub, values, index);
+            results[index] = validator.validate(entities, values, index);
         }
 
         return results;
@@ -445,8 +570,11 @@
 	};
 
 	addToken('Identifier');
-	addToken('Colon');
 	addToken('Comma');
+	addToken('Colon');
+	addToken('QuestionMark');
+	addToken('String');
+	addToken('Number');
 	addToken('LogicalAnd');
 	addToken('LogicalOr');
 	addToken('LogicalNot');
@@ -467,6 +595,10 @@
     };
 
     Validator.prototype.validate = function(entities, values, valueKey) {
+        if (entities === null || typeof entities === 'undefined') {
+            return true;
+        }
+
         // A couple shorthands
         var ValidatorFunctions = this.validatorFunctions;
         var Entity = this.entities;
@@ -475,6 +607,7 @@
         var logicalOperator = 1; // 1 = AND, 2 = OR
         var negateNext = false;
 
+        // Loop through the entities
         for (var i = 0; i < entities.length; i++) {
             var thisEntity = entities[i];
             var tempResult = true;
@@ -512,6 +645,16 @@
                 useTempResult = true;
             } else if (thisEntity.type == Entity.Block) {
                 tempResult = this.validate(thisEntity.sub, values, valueKey);
+                useTempResult = true;
+            } else if (thisEntity.type == Entity.Ternary) {
+                var ternaryCondition = this.validate(thisEntity.conditions, values, valueKey);
+
+                if (ternaryCondition) {
+                    tempResult = this.validate(thisEntity.ifThen, values, valueKey);
+                } else {
+                    tempResult = this.validate(thisEntity.ifElse, values, valueKey);
+                }
+
                 useTempResult = true;
             }
 
@@ -551,7 +694,7 @@
     var re = {
         alpha: new RegExp('^[a-zA-Z]+$'),
         alphanumeric: new RegExp('^[a-zA-Z0-9]+$'),
-        email: new RegExp(/^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?/i)
+        email: new RegExp('^.*?@.*?\\..+$')
     };
 
     ValidatorFunctions = {
@@ -577,6 +720,10 @@
 
         lenmax: function(allValues, value, max) {
             return value.length <= max;
+        },
+
+        lenequals: function(allValues, value, equalsTo) {
+            return value.toString().length == parseInt(equalsTo, 10);
         },
 
         min: function(allValues, value, min) {
@@ -627,7 +774,8 @@
         },
 
         email: function(allValues, value) {
-            // http://stackoverflow.com/a/2855946/316944
+            // We used to use this regex: http://stackoverflow.com/a/2855946/316944
+            // But it's probably a bit overkill.
             return re.email.test(value);
         },
 
