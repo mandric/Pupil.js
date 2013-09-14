@@ -66,7 +66,7 @@
                 ruleCache[rule] = entities;
             }
 
-            results[index] = validator.validate(entities.sub, values, index);
+            results[index] = validator.validate(entities, values, index);
         }
 
         return results;
