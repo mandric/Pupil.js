@@ -48,14 +48,16 @@
         
         var results = {};
 
+        // Start by defaulting all given values' validation results to "passing"
         for (var index in values) {
-            var rule = rules[index],
-                tokens, entities;
+            results[index] = true;
+        }
 
-            if ( ! rule) {
-                results[index] = true;
-                continue;
-            }
+        // And then run the rules
+        for (var index in rules) {
+            var rule = rules[index],
+                value = values[index],
+                tokens, entities;
 
             if (ruleCache[rule]) {
                 entities = ruleCache[rule];

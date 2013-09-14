@@ -522,14 +522,16 @@
         
         var results = {};
 
+        // Start by defaulting all given values' validation results to "passing"
         for (var index in values) {
-            var rule = rules[index],
-                tokens, entities;
+            results[index] = true;
+        }
 
-            if ( ! rule) {
-                results[index] = true;
-                continue;
-            }
+        // And then run the rules
+        for (var index in rules) {
+            var rule = rules[index],
+                value = values[index],
+                tokens, entities;
 
             if (ruleCache[rule]) {
                 entities = ruleCache[rule];
@@ -698,48 +700,48 @@
     };
 
     ValidatorFunctions = {
-        equals: function(allValues, value, equalsTo) {
+        "equals": function(allValues, value, equalsTo) {
             return value == equalsTo;
         },
 
-        iequals: function(allValues, value, equalsTo) {
+        "iequals": function(allValues, value, equalsTo) {
             return value.toLowerCase() == equalsTo.toLowerCase();
         },
 
-        sequals: function(allValues, value, equalsTo) {
+        "sequals": function(allValues, value, equalsTo) {
             return value === equalsTo;
         },
 
-        siequals: function(allValues, value, equalsTo) {
+        "siequals": function(allValues, value, equalsTo) {
             return value.toLowerCase() === equalsTo.toLowerCase();
         },
 
-        lenmin: function(allValues, value, min) {
+        "lenmin": function(allValues, value, min) {
             return value.length >= min;
         },
 
-        lenmax: function(allValues, value, max) {
+        "lenmax": function(allValues, value, max) {
             return value.length <= max;
         },
 
-        lenequals: function(allValues, value, equalsTo) {
+        "lenequals": function(allValues, value, equalsTo) {
             return value.toString().length == parseInt(equalsTo, 10);
         },
 
-        min: function(allValues, value, min) {
+        "min": function(allValues, value, min) {
             return parseFloat(value, 10) >= min;
         },
 
-        max: function(allValues, value, max) {
+        "max": function(allValues, value, max) {
             return parseFloat(value, 10) <= max;
         },
 
-        between: function(allValues, value, min, max) {
+        "between": function(allValues, value, min, max) {
             var numVal = parseFloat(value, 10);
             return ((numVal >= min) && (numVal <= max));
         },
 
-        in: function(allValues, value) {
+        "in": function(allValues, value) {
             var args = Array.prototype.slice.call(arguments);
             args.shift();
             args.shift();
@@ -752,43 +754,43 @@
             return false;
         },
 
-        required: function(allValues, value) {
+        "required": function(allValues, value) {
             return !!value;
         },
 
-        optional: function(allValues, value) {
+        "optional": function(allValues, value) {
             return true;
         },
 
-        numeric: function(allValues, value) {
+        "numeric": function(allValues, value) {
             // http://stackoverflow.com/a/1830844/316944
             return ! isNaN(parseFloat(value)) && isFinite(value);
         },
 
-        alpha: function(allValues, value) {
+        "alpha": function(allValues, value) {
             return re.alpha.test(value);
         },
 
-        alphanumeric: function(allValues, value) {
+        "alphanumeric": function(allValues, value) {
             return re.alphanumeric.test(value);
         },
 
-        email: function(allValues, value) {
+        "email": function(allValues, value) {
             // We used to use this regex: http://stackoverflow.com/a/2855946/316944
             // But it's probably a bit overkill.
             return re.email.test(value);
         },
 
-        regex: function(allValues, value, regex, flags) {
+        "regex": function(allValues, value, regex, flags) {
             flags = flags || "";
             return (new RegExp(regex, flags)).test(value);
         },
 
-        integer: function(allValues, value) {
+        "integer": function(allValues, value) {
             return parseInt(value, 10) == value;
         },
 
-        equalsto: function(allValues, value, equalsToKey) {
+        "equalsto": function(allValues, value, equalsToKey) {
             return value == allValues[equalsToKey];
         }
     };
