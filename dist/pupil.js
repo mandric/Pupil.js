@@ -529,6 +529,10 @@
 
         // And then run the rules
         for (var index in rules) {
+            if (typeof values[index] === 'undefined' || values[index] === null) {
+                values[index] = '';
+            }
+
             var rule = rules[index],
                 value = values[index],
                 tokens, entities;

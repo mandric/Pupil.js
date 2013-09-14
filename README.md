@@ -15,6 +15,10 @@ Please see the section "Rule strings" below for an updated documentation.
 * Light revalidation via caching
 
 ## Changelog
+**1.1.2**
+
+* Undefined values now default to an empty string to avoid problems with validation functions using e.g. the toString() method for the value.
+
 **1.1.1**
 
 * Fixed a bug where rules without an associated value were not run at all, which caused the validator to not return anything for those rules. One issue caused by this was that non-supplied required fields didn't return that they didn't pass the validation."
