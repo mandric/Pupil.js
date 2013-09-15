@@ -88,7 +88,7 @@ The syntax aims to mimic C-like languages. You can use logical operators (`&& (a
 ternaries (`condition ? thenRule : elseRule`), nested "blocks" (`rule && (some || nested || rules)`) and validation
 functions (`validationFunction("arg1", "arg2")`).
 
-**String parameters, such as the regex in the "regex" function, should be quoted.**  
+**String parameters for validation functions, such as the regex in the "regex" function, should be quoted.**  
 Non-quoted parameters will be cast to floats (numbers with decimals).
 
 For each validation function, there is also a matching function prepended by `other` that allows you to run functions
