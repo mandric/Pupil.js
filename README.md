@@ -21,12 +21,12 @@ Please see the section "Rule strings" below for an updated documentation.
 
 **1.1.1**
 
-* Fixed a bug where rules without an associated value were not run at all, which caused the validator to not return anything for those rules. One issue caused by this was that non-supplied required fields didn't return that they didn't pass the validation."
+* Fixed a bug where rules without an associated value were not run at all, which caused the validator to not return anything for those rules. One issue caused by this was that non-supplied required fields didn't return that they didn't pass the validation.
 
 **1.1.0**
 
 * Changed the rule string syntax to follow C-like languages more closely and to prevent
-headaches with further possible syntax additions.
+headaches with further possible syntax additions. Strings, such as regex rule parameters, should now be quoted.
 
 * Added ternaries: ```'condition ? thenRule : elseRule'```
 
@@ -60,7 +60,7 @@ For example:
 
 ```javascript
 var rules = {
-	name: 'min(3) && max(8)',
+	name: 'min(3) && max(8) && regex("^[a-zA-Z]+$")',
 	country: 'min(2)'
 };
 
@@ -88,12 +88,15 @@ The syntax aims to mimic C-like languages. You can use logical operators (`&& (a
 ternaries (`condition ? thenRule : elseRule`), nested "blocks" (`rule && (some || nested || rules)`) and validation
 functions (`validationFunction("arg1", "arg2")`).
 
+**String parameters for validation functions, such as the regex in the "regex" function, should be quoted.**  
+Non-quoted parameters will be cast to floats (numbers with decimals).
+
 For each validation function, there is also a matching function prepended by `other` that allows you to run functions
 on other values than the one the rule string is for. This can be useful for fields that have differing requirements depending on another field. For example:
 
 ```javascript
 {
-	state: 'otherEquals("country", "US") ? lenMin(2) : lenMin(0))'
+	state: 'otherEquals("country", "US") ? lenMin(2) : lenMin(0)'
 }
 ```
 
