@@ -74,7 +74,7 @@
         for (var i = 0; i < tokens.length; i++) {
             var thisToken = tokens[i];
             var entitiesToPush = [];
-            var openNewBlock = false;
+            var openBlock = false;
             var closeBlock = false;
             var closeTernary = false;
 
@@ -176,7 +176,7 @@
                     expectOneOf(['string', 'number', 'funcArgsEnd']);
                 // Or open a block
                 } else if (accept.blockStart) {
-                    openNewBlock = true;
+                    openBlock = true;
                     flushFunction = true;
 
                     expectOneOf(['identifier', 'blockStart', 'blockEnd', 'negator']);
@@ -227,7 +227,7 @@
                 }
             }
 
-            if (openNewBlock) {
+            if (openBlock) {
                 var newBlock = createEntity(Entity.Block);
                 blockStack.push(newBlock);
                 currentBlock.sub.push(newBlock);
