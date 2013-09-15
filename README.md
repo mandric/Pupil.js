@@ -16,12 +16,7 @@ A PHP version, Pupil.php, is planned.
 ## Changelog
 **1.2.0**
 
-* Validation results are now returned as objects. This object contains the following methods:
-```javascript
-isValid()   // Whether the validation was successful or not
-hasErrors() // The opposite of isValid()
-errors()    // Returns the fields that didn't pass validation
-fields()    // Returns all of the fields and their validation results
+* Validation results are now returned as objects. See "Usage" below for more information.
 ```
 
 **1.1.2**
