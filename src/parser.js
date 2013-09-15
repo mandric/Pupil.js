@@ -3,7 +3,7 @@
         return {
             type: type,
 
-            // Used for "Block" and "Ternary" type entities
+            // Used for "Block" type entities
             sub: [],
 
             // Used for "Func" (Function) type entities
@@ -105,7 +105,7 @@
                 currentFunction = createEntity(Entity.Func);
                 currentFunction.funcName = thisToken.data;
 
-                expectOneOf(['logicalOp', 'funcArgsStart', 'blockEnd']);
+                expectOneOf(['logicalOp', 'funcArgsStart', 'blockEnd', 'ternaryThen', 'ternaryElse']);
 
             // Ternary "then"/start
             } else if (thisToken.name == Token.QuestionMark) {
