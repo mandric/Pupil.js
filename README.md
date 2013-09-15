@@ -17,7 +17,6 @@ A PHP version, Pupil.php, is planned.
 **1.2.0**
 
 * Validation results are now returned as objects. See "Usage" below for more information.
-```
 
 **1.1.2**
 
