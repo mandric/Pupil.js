@@ -21,12 +21,12 @@ Please see the section "Rule strings" below for an updated documentation.
 
 **1.1.1**
 
-* Fixed a bug where rules without an associated value were not run at all, which caused the validator to not return anything for those rules. One issue caused by this was that non-supplied required fields didn't return that they didn't pass the validation."
+* Fixed a bug where rules without an associated value were not run at all, which caused the validator to not return anything for those rules. One issue caused by this was that non-supplied required fields didn't return that they didn't pass the validation.
 
 **1.1.0**
 
 * Changed the rule string syntax to follow C-like languages more closely and to prevent
-headaches with further possible syntax additions.
+headaches with further possible syntax additions. Regex rule parameters should be quoted.
 
 * Added ternaries: ```'condition ? thenRule : elseRule'```
 
