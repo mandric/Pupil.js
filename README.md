@@ -4,8 +4,7 @@ An easy and powerful string-based validation library.
 This is __Pupil.js__, the JavaScript version of the library.  
 A PHP version, Pupil.php, is planned.
 
-**NOTE:** Update 1.1.0 changed the syntax rule strings should be written with.  
-Please see the section "Rule strings" below for an updated documentation.
+**NOTE:** Update 1.2.0 changed the return format of validation results. See changelog below.
 
 ## Features
 * Supports IE7+
@@ -15,6 +14,16 @@ Please see the section "Rule strings" below for an updated documentation.
 * Light revalidation via caching
 
 ## Changelog
+**1.2.0**
+
+* Validation results are now returned as objects. This object contains the following methods:
+```javascript
+isValid()   // Whether the validation was successful or not
+hasErrors() // The opposite of isValid()
+errors()    // Returns the fields that didn't pass validation
+fields()    // Returns all of the fields and their validation results
+```
+
 **1.1.2**
 
 * Undefined values now default to an empty string to avoid problems with validation functions using e.g. the toString() method for the value.
@@ -72,13 +81,13 @@ var values = {
 
 The two objects don't have to have identical keys, but values without a matching key in rules won't be evaluated at all.
 
-The `validate()` method returns an object like this:
+The `validate()` method returns an object that has the following methods:
 
 ```javascript
-{
-	name: true,    // Name passed validation
-	country: false // Country didn't
-}
+isValid()   // Whether the validation was successful or not
+hasErrors() // The opposite of isValid()
+errors()    // Returns the fields that didn't pass validation
+fields()    // Returns all of the fields and their validation results
 ```
 
 ## Rule strings
