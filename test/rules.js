@@ -55,7 +55,7 @@ exports['optional with and condition does not validate'] = function(test) {
     test.done();
 };
 
-exports['use otherRequire to require one of two fields'] = function(test) {
+exports['use other to require one of two fields'] = function(test) {
     var rules = {
         name: "otherMax('age', 100) ? optional : lenMin(5)",
         age: "otherLenMin('name', 5) ? optional : max(100)"
