@@ -1,5 +1,4 @@
-var pupil = require('../src/pupil'),
-    rules;
+var pupil = require('../src/pupil');
 
 exports.setUp = function(callback) {
     callback();
@@ -9,7 +8,7 @@ exports.tearDown = function(callback) {
     callback();
 };
 
-exports['if no rules then everything validates'] = function(test) {
+exports['if no rules then fields validates'] = function(test) {
     var rules = {},
         data = {foo: 'test'};
     var ret = pupil.validate(rules, data);
@@ -17,7 +16,7 @@ exports['if no rules then everything validates'] = function(test) {
     test.done();
 };
 
-exports['require when rule is present'] = function(test) {
+exports['non-valid lenMin does not validate if field not present'] = function(test) {
     var rules = {foo: "lenMin(3)"},
         data = {};
     var ret = pupil.validate(rules, data);
@@ -25,33 +24,38 @@ exports['require when rule is present'] = function(test) {
     test.done();
 };
 
-exports['optional validates if not present'] = function(test) {
+exports['optional rule validates if field not present'] = function(test) {
     var rules = { foo: "optional" };
     var ret = pupil.validate(rules, {});
     test.deepEqual(ret.fields(), {foo: true});
     test.done();
 };
 
-exports['optional with or condition validates if not present'] = function(test) {
+exports['optional or non-valid lenMin validates when field not present'] = function(test) {
     var rules = { foo: "optional || lenMin(3)" };
     var ret = pupil.validate(rules, {});
     test.deepEqual(ret.fields(), {foo: true});
     test.done();
 };
 
-exports['optional with or condition always validates'] = function(test) {
-    // does this make sense?
+exports['optional or non-valid lenMin rules validates'] = function(test) {
     var rules = { foo: "optional || lenMin(3)" };
     var ret = pupil.validate(rules, { foo: 'a' });
     test.deepEqual(ret.fields(), {foo: true});
     test.done();
 };
 
-exports['optional with and condition does not validate'] = function(test) {
-    // does this make sense?
+exports['optional and non-valid lenMin rules do not validate'] = function(test) {
     var rules = { foo: "optional && lenMin(3)" };
     var ret = pupil.validate(rules, { foo: 'a' });
     test.deepEqual(ret.fields(), {foo: false});
+    test.done();
+};
+
+exports['optional and valid lenMin rules validates'] = function(test) {
+    var rules = { foo: "optional && lenMin(3)" };
+    var ret = pupil.validate(rules, { foo: 'aaa' });
+    test.deepEqual(ret.fields(), {foo: true});
     test.done();
 };
 
