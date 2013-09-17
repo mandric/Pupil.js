@@ -65,7 +65,7 @@ exports['use other to require one of two fields'] = function(test) {
         age: "otherLenMin('name', 5) ? optional : max(100)"
     };
     var ret = pupil.validate(rules, {name: "Sally", age: 20});
-    test.deepEequal(ret.fields(), {name: true, age: true});
+    test.deepEqual(ret.fields(), {name: true, age: true});
     test.done();
 };
 
