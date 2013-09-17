@@ -89,16 +89,6 @@ exports['validates both fields when using other and second one is defined'] = fu
     test.done();
 };
 
-exports['validates both fields when using other and second one is defined'] = function(test) {
-    var rules = {
-        name: "otherMax('age', 100) ? optional : lenMin(5)",
-        age: "otherLenMin('name', 5) ? optional : max(100)"
-    };
-    var ret = pupil.validate(rules, {age: 20});
-    test.deepEqual(ret.fields(), {name: true, age: true});
-    test.done();
-};
-
 exports['both fields are not validated when using other and one field defined and invalid'] = function(test) {
     var rules = {
         name: "otherMax('age', 100) ? optional : lenMin(5)",
