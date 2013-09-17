@@ -59,12 +59,62 @@ exports['optional and valid lenMin rules validates'] = function(test) {
     test.done();
 };
 
-exports['use other to require one of two fields'] = function(test) {
+exports['validates both fields when using other and optional rule'] = function(test) {
     var rules = {
         name: "otherMax('age', 100) ? optional : lenMin(5)",
         age: "otherLenMin('name', 5) ? optional : max(100)"
     };
     var ret = pupil.validate(rules, {name: "Sally", age: 20});
+    test.deepEqual(ret.fields(), {name: true, age: true});
+    test.done();
+};
+
+exports['validates both fields when using other and first one is defined'] = function(test) {
+    var rules = {
+        name: "otherMax('age', 100) ? optional : lenMin(5)",
+        age: "otherLenMin('name', 5) ? optional : max(100)"
+    };
+    var ret = pupil.validate(rules, {name: "Sally"});
+    test.deepEqual(ret.fields(), {name: true, age: true});
+    test.done();
+};
+
+exports['validates both fields when using other and second one is defined'] = function(test) {
+    var rules = {
+        name: "otherMax('age', 100) ? optional : lenMin(5)",
+        age: "otherLenMin('name', 5) ? optional : max(100)"
+    };
+    var ret = pupil.validate(rules, {age: 20});
+    test.deepEqual(ret.fields(), {name: true, age: true});
+    test.done();
+};
+
+exports['validates both fields when using other and second one is defined'] = function(test) {
+    var rules = {
+        name: "otherMax('age', 100) ? optional : lenMin(5)",
+        age: "otherLenMin('name', 5) ? optional : max(100)"
+    };
+    var ret = pupil.validate(rules, {age: 20});
+    test.deepEqual(ret.fields(), {name: true, age: true});
+    test.done();
+};
+
+exports['both fields are not validated when using other and one field defined and invalid'] = function(test) {
+    var rules = {
+        name: "otherMax('age', 100) ? optional : lenMin(5)",
+        age: "otherLenMin('name', 5) ? optional : max(100)"
+    };
+    var ret = pupil.validate(rules, {age: 200});
+    test.deepEqual(ret.fields(), {name: false, age: false});
+    test.done();
+};
+
+exports['when using optional if one field is valid they both validate'] = function(test) {
+    var rules = {
+        name: "otherMax('age', 100) ? optional : lenMin(5)",
+        age: "otherLenMin('name', 5) ? optional : max(100)"
+    };
+    var ret = pupil.validate(rules, {name: "Sally", age: 200});
     test.deepEqual(ret.fields(), {name: true, age: true});
     test.done();
 };
