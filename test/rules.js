@@ -8,7 +8,7 @@ exports.tearDown = function(callback) {
     callback();
 };
 
-exports['if no rules then fields validates'] = function(test) {
+exports['values without rules will always validate'] = function(test) {
     var rules = {},
         data = {foo: 'test'};
     var ret = pupil.validate(rules, data);
@@ -16,7 +16,7 @@ exports['if no rules then fields validates'] = function(test) {
     test.done();
 };
 
-exports['non-valid lenMin does not validate if field not present'] = function(test) {
+exports['rules are also applied to values that are not present'] = function(test) {
     var rules = {foo: "lenMin(3)"},
         data = {};
     var ret = pupil.validate(rules, data);
@@ -31,21 +31,22 @@ exports['optional rule validates if field not present'] = function(test) {
     test.done();
 };
 
-exports['optional or non-valid lenMin validates when field not present'] = function(test) {
-    var rules = { foo: "optional || lenMin(3)" };
-    var ret = pupil.validate(rules, {});
-    test.deepEqual(ret.fields(), {foo: true});
-    test.done();
-};
-
-exports['optional or non-valid lenMin rules validates'] = function(test) {
+exports['"optional" with an "or" condition always validates'] = function(test) {
     var rules = { foo: "optional || lenMin(3)" };
     var ret = pupil.validate(rules, { foo: 'a' });
     test.deepEqual(ret.fields(), {foo: true});
     test.done();
 };
 
-exports['optional and non-valid lenMin rules do not validate'] = function(test) {
+exports['"optional" with an "or" condition validates if value is not present'] = function(test) {
+    var rules = { foo: "optional || lenMin(3)" };
+    var ret = pupil.validate(rules, {});
+    test.deepEqual(ret.fields(), {foo: true});
+    test.done();
+};
+
+exports['"optional" with an "and" requires the other condition to also validate'] = function(test) {
+    // does this make sense?
     var rules = { foo: "optional && lenMin(3)" };
     var ret = pupil.validate(rules, { foo: 'a' });
     test.deepEqual(ret.fields(), {foo: false});
